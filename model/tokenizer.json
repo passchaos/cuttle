@@ -1,0 +1,21 @@
+{
+  "config": {
+    "vocab_size": 32000,
+    "unk_token": "<unk>",
+    "bos_token": "<s>",
+    "eos_token": "</s>",
+    "pad_token": "<pad>"
+  },
+  "vocab": {
+    "<pad>": 0,
+    "</s>": 3,
+    "<unk>": 1,
+    "<s>": 2
+  },
+  "special_tokens": {
+    "<unk>": 1,
+    "<pad>": 0,
+    "</s>": 3,
+    "<s>": 2
+  }
+}
