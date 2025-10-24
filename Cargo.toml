@@ -7,8 +7,7 @@ description = "A large language model inference engine in Rust"
 license = "MIT"
 
 [dependencies]
-vectra = { git = "https://github.com/passchaos/vectra.git" }
-# Serialization and deserialization
+vectra = "0.2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 bincode = "1.3"
