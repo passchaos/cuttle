@@ -8,6 +8,8 @@ use crate::tensor::{Tensor, Tensor1D, Tensor2D, Tensor3D};
 use crate::tokenizer::{Tokenizer, TokenizerConfig};
 use log::{debug, info, warn};
 use std::path::Path;
+use tokio::process;
+use vectra::CmpExt;
 
 /// Inference configuration
 #[derive(Debug, Clone)]
@@ -125,7 +127,7 @@ impl InferenceEngine {
             let logits = self.model.forward(&current_ids)?;
 
             // Get logits for the last position
-            let last_logits = self.extract_last_logits(&logits)?;
+            let last_logits = self.extract_last_logits(&logits);
 
             // Apply temperature and repetition penalty
             let processed_logits = self.process_logits(&last_logits, &current_ids)?;
@@ -150,16 +152,9 @@ impl InferenceEngine {
     }
 
     /// Extract logits for the last position
-    fn extract_last_logits(&self, logits: &Tensor3D) -> Result<Tensor3D> {
+    fn extract_last_logits(&self, logits: &Tensor3D) -> Tensor3D {
         let shape = logits.shape();
-        if shape.len() != 3 {
-            return Err(CuttleError::InferenceError(format!(
-                "Expected 3D logits tensor, got {}D",
-                shape.len()
-            )));
-        }
 
-        let seq_len = shape[1];
         let vocab_size = shape[2];
 
         // Simplified implementation: create logits for the last position
@@ -173,7 +168,7 @@ impl InferenceEngine {
 
         // Apply temperature
         if self.config.temperature != 1.0 {
-            processed = processed.scale(1.0 / self.config.temperature);
+            processed = processed.mul_scalar(1.0 / self.config.temperature);
         }
 
         // Apply repetition penalty
@@ -223,11 +218,11 @@ impl InferenceEngine {
 
     /// Greedy sampling
     fn greedy_sample(&self, logits: &Tensor3D) -> Result<usize> {
-        let data = logits.to_vec();
-        let max_idx = data
+        let max_idx = logits
+            .data()
             .iter()
             .enumerate()
-            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+            .max_by(|(_, a), (_, b)| a.cmp_ext(b))
             .map(|(idx, _)| idx)
             .ok_or_else(|| CuttleError::InferenceError("Empty logits tensor".to_string()))?;
 
@@ -253,16 +248,7 @@ impl InferenceEngine {
 
     /// Multinomial sampling
     fn multinomial_sample(&self, probs: &Tensor3D) -> Result<usize> {
-        let data = probs.to_vec();
-
-        // Simplified sampling implementation
-        // Actual implementation needs random sampling based on probability distribution
-        let sum: f32 = data.iter().sum();
-        if sum <= 0.0 {
-            return Err(CuttleError::InferenceError(
-                "Invalid probability distribution".to_string(),
-            ));
-        }
+        let data = probs.data();
 
         // Use simple random number generation
         let random_val = (data.len() as f32 * 0.5) as usize % data.len();
@@ -313,11 +299,11 @@ impl InferenceEngine {
             let target = input_ids[i];
 
             let logits = self.model.forward(context)?;
-            let last_logits = self.extract_last_logits(&logits)?;
+            let last_logits = self.extract_last_logits(&logits);
             // Simplified implementation: use logits directly as probabilities
             let probs = last_logits;
 
-            let prob_data = probs.to_vec();
+            let prob_data = probs.data();
             if target < prob_data.len() {
                 let prob = prob_data[target].max(1e-10); // Avoid log(0)
                 total_log_prob += prob.ln();

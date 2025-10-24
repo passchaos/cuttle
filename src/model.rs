@@ -104,31 +104,31 @@ impl AttentionLayer {
         let head_dim = hidden_size / num_heads;
 
         Ok(Self {
-            q_proj: Tensor2D::randn([hidden_size, hidden_size])?,
-            k_proj: Tensor2D::randn([hidden_size, hidden_size])?,
-            v_proj: Tensor2D::randn([hidden_size, hidden_size])?,
-            o_proj: Tensor2D::randn([hidden_size, hidden_size])?,
+            q_proj: Tensor2D::randn([hidden_size, hidden_size]),
+            k_proj: Tensor2D::randn([hidden_size, hidden_size]),
+            v_proj: Tensor2D::randn([hidden_size, hidden_size]),
+            o_proj: Tensor2D::randn([hidden_size, hidden_size]),
             num_heads,
             head_dim,
         })
     }
 
     /// Forward pass
-    pub fn forward(&self, hidden_states: &Tensor3D) -> Result<Tensor3D> {
+    pub fn forward(&self, hidden_states: &Tensor3D) -> Tensor3D {
         let batch_size = hidden_states.shape()[0];
         let seq_len = hidden_states.shape()[1];
 
         // Calculate Q, K, V
-        let q = hidden_states.matmul(&self.q_proj)?;
-        let k = hidden_states.matmul(&self.k_proj)?;
-        let v = hidden_states.matmul(&self.v_proj)?;
+        let q = hidden_states.batch_matmul(&self.q_proj);
+        let k = hidden_states.batch_matmul(&self.k_proj);
+        let v = hidden_states.batch_matmul(&self.v_proj);
 
         // Simplified attention mechanism implementation (without reshape)
         // In static dimension design, we directly use 3D tensors for computation
         let attention_output = v; // Simplified implementation
 
         // Output projection
-        attention_output.matmul(&self.o_proj)
+        attention_output.batch_matmul(&self.o_proj)
     }
 }
 
@@ -145,21 +145,21 @@ pub struct FeedForwardLayer {
 
 impl FeedForwardLayer {
     /// Create new feed-forward network layer
-    pub fn new(hidden_size: usize, intermediate_size: usize) -> Result<Self> {
-        Ok(Self {
-            up_proj: Tensor2D::randn([hidden_size, intermediate_size])?,
-            gate_proj: Tensor2D::randn([hidden_size, intermediate_size])?,
-            down_proj: Tensor2D::randn([intermediate_size, hidden_size])?,
-        })
+    pub fn new(hidden_size: usize, intermediate_size: usize) -> Self {
+        Self {
+            up_proj: Tensor2D::randn([hidden_size, intermediate_size]),
+            gate_proj: Tensor2D::randn([hidden_size, intermediate_size]),
+            down_proj: Tensor2D::randn([intermediate_size, hidden_size]),
+        }
     }
 
     /// Forward pass (SwiGLU activation)
-    pub fn forward(&self, hidden_states: &Tensor3D) -> Result<Tensor3D> {
-        let up_output = hidden_states.matmul(&self.up_proj)?;
-        let gate_output = hidden_states.matmul(&self.gate_proj)?.gelu();
+    pub fn forward(&self, hidden_states: &Tensor3D) -> Tensor3D {
+        let up_output = hidden_states.batch_matmul(&self.up_proj);
+        let gate_output = hidden_states.batch_matmul(&self.gate_proj).gelu();
 
-        let intermediate = up_output.mul(&gate_output)?;
-        intermediate.matmul(&self.down_proj)
+        let intermediate = &up_output * &gate_output;
+        intermediate.batch_matmul(&self.down_proj)
     }
 }
 
@@ -181,23 +181,23 @@ impl TransformerLayer {
     pub fn new(config: &ModelConfig) -> Result<Self> {
         Ok(Self {
             self_attention: AttentionLayer::new(config.hidden_size, config.num_attention_heads)?,
-            feed_forward: FeedForwardLayer::new(config.hidden_size, config.intermediate_size)?,
-            input_layernorm: Tensor1D::randn([config.hidden_size])?,
-            post_attention_layernorm: Tensor1D::randn([config.hidden_size])?,
+            feed_forward: FeedForwardLayer::new(config.hidden_size, config.intermediate_size),
+            input_layernorm: Tensor1D::randn([config.hidden_size]),
+            post_attention_layernorm: Tensor1D::randn([config.hidden_size]),
         })
     }
 
     /// Forward pass
-    pub fn forward(&self, hidden_states: &Tensor3D, rms_norm_eps: f32) -> Result<Tensor3D> {
+    pub fn forward(&self, hidden_states: &Tensor3D, rms_norm_eps: f32) -> Tensor3D {
         // Attention layer
-        let normed_input = hidden_states.rms_norm(rms_norm_eps)?;
-        let attention_output = self.self_attention.forward(&normed_input)?;
-        let hidden_states = hidden_states.add(&attention_output)?;
+        let normed_input = hidden_states.rms_norm(rms_norm_eps);
+        let attention_output = self.self_attention.forward(&normed_input);
+        let hidden_states = hidden_states + &attention_output;
 
         // Feed-forward network layer
-        let normed_hidden = hidden_states.rms_norm(rms_norm_eps)?;
-        let ff_output = self.feed_forward.forward(&normed_hidden)?;
-        hidden_states.add(&ff_output)
+        let normed_hidden = hidden_states.rms_norm(rms_norm_eps);
+        let ff_output = self.feed_forward.forward(&normed_hidden);
+        &hidden_states + &ff_output
     }
 }
 
@@ -225,9 +225,9 @@ impl Model {
         }
 
         Ok(Self {
-            embed_tokens: Tensor2D::randn([config.vocab_size, config.hidden_size])?,
-            norm: Tensor1D::randn([config.hidden_size])?,
-            lm_head: Tensor2D::randn([config.hidden_size, config.vocab_size])?,
+            embed_tokens: Tensor2D::randn([config.vocab_size, config.hidden_size]),
+            norm: Tensor1D::randn([config.hidden_size]),
+            lm_head: Tensor2D::randn([config.hidden_size, config.vocab_size]),
             layers,
             config,
         })
@@ -261,14 +261,14 @@ impl Model {
 
         // Pass through all Transformer layers
         for layer in &self.layers {
-            hidden_states = layer.forward(&hidden_states, self.config.rms_norm_eps)?;
+            hidden_states = layer.forward(&hidden_states, self.config.rms_norm_eps);
         }
 
         // Final normalization
-        hidden_states = hidden_states.rms_norm(self.config.rms_norm_eps)?;
+        hidden_states = hidden_states.rms_norm(self.config.rms_norm_eps);
 
         // Language model head
-        hidden_states.matmul(&self.lm_head)
+        Ok(hidden_states.batch_matmul(&self.lm_head))
     }
 
     /// Convert input IDs to embeddings
@@ -276,7 +276,7 @@ impl Model {
         let seq_len = input_ids.len();
         let hidden_size = self.config.hidden_size;
 
-        let mut embeddings = Tensor3D::zeros([1, seq_len, hidden_size])?;
+        let mut embeddings = Tensor3D::zeros([1, seq_len, hidden_size]);
         let embed_data = embeddings.data_mut();
 
         // Simplified embedding lookup (actual implementation needs more efficient indexing)
