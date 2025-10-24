@@ -1,16 +1,16 @@
 # Cuttle 🦀
 
-一个基于CPU的大语言模型推理引擎，使用纯Rust实现，专门优化支持Qwen3-0.6B模型。
+A CPU-based large language model inference engine implemented in pure Rust, specifically optimized for Qwen3-0.6B model.
 
-## ✨ 特性
+## ✨ Features
 
-- 🦀 **纯Rust实现**: 无Python依赖，高性能CPU推理
-- 🤖 **Qwen3-0.6B支持**: 专门优化支持Qwen3-0.6B模型
-- 🌐 **中英文双语**: 支持中英文双语文本生成
-- 📦 **自动下载**: 自动模型下载功能
-- 💻 **命令行界面**: 易于使用的CLI工具
-- 🔧 **灵活配置**: 可配置的推理参数和分词系统
-- 📊 **性能监控**: 内置性能分析和基准测试
+- 🦀 **Pure Rust Implementation**: No Python dependencies, high-performance CPU inference
+- 🤖 **Qwen3-0.6B Support**: Specifically optimized for Qwen3-0.6B model
+- 🌐 **Bilingual Support**: Supports both Chinese and English text generation
+- 📦 **Auto Download**: Automatic model download functionality
+- 💻 **Command Line Interface**: Easy-to-use CLI tool
+- 🔧 **Flexible Configuration**: Configurable inference parameters and tokenization system
+- 📊 **Performance Monitoring**: Built-in performance analysis and benchmarking
 
 ## 🏗️ Architecture
 
@@ -22,57 +22,57 @@ Cuttle adopts a modular design with the following main components:
 - **Inference Engine** (`inference`): Complete inference pipeline
 - **Utils Module** (`utils`): Performance monitoring and utility functions
 
-## 📦 安装和构建
+## 📦 Installation and Build
 
-### 系统要求
+### System Requirements
 
 - Rust 1.70+
-- 内存: 建议4GB以上
-- 存储: 约2GB用于模型文件
-- 网络: 首次下载模型需要网络连接
+- Memory: 4GB+ recommended
+- Storage: ~2GB for model files
+- Network: Internet connection required for initial model download
 
-### 从源码构建
+### Build from Source
 
 ```bash
-# 克隆仓库
+# Clone repository
 git clone https://github.com/passchaos/cuttle.git
 cd cuttle
 
-# 调试构建
+# Debug build
 cargo build
 
-# 发布构建（推荐用于实际使用）
+# Release build (recommended for production use)
 cargo build --release
 
-# 安装命令行工具
+# Install command line tool
 cargo install --path .
 ```
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 1. 下载Qwen3-0.6B模型
+### 1. Download Qwen3-0.6B Model
 
 ```bash
-# 下载Qwen3-0.6B模型文件到assets目录
+# Download Qwen3-0.6B model files to assets directory
 cargo run -- download
 
-# 强制重新下载（如果文件已存在）
+# Force re-download (if files already exist)
 cargo run -- download --force
 ```
 
-### 2. 文本生成
+### 2. Text Generation
 
 ```bash
-# 中文文本生成
+# Chinese text generation
 cargo run -- generate --prompt "你好，请介绍一下自己。"
 
-# 英文文本生成
+# English text generation
 cargo run -- generate --prompt "Hello, how are you?"
 
-# 交互式模式
+# Interactive mode
 cargo run -- generate --interactive
 
-# 自定义参数
+# Custom parameters
 cargo run -- generate \
   --prompt "请写一首关于春天的诗。" \
   --max-length 200 \
@@ -80,10 +80,10 @@ cargo run -- generate \
   --top-p 0.9
 ```
 
-### 3. 查看模型信息
+### 3. View Model Information
 
 ```bash
-# 显示模型信息
+# Display model information
 cargo run -- info
 ```
 
@@ -179,14 +179,14 @@ let probs = activated.softmax(1)?;
 }
 ```
 
-### 配置选项
+### Configuration Options
 
-- `--max-length`: 最大生成长度 (默认: 512)
-- `--temperature`: 温度参数，控制随机性 (默认: 1.0)
-- `--top-p`: Top-p采样参数 (默认: 0.9)
-- `--top-k`: Top-k采样参数 (默认: 50)
-- `--interactive`: 交互式模式
-- `--force`: 强制重新下载模型
+- `--max-length`: Maximum generation length (default: 512)
+- `--temperature`: Temperature parameter, controls randomness (default: 1.0)
+- `--top-p`: Top-p sampling parameter (default: 0.9)
+- `--top-k`: Top-k sampling parameter (default: 50)
+- `--interactive`: Interactive mode
+- `--force`: Force re-download model
 
 ## 📊 Performance Benchmarks
 
@@ -231,54 +231,54 @@ cargo doc --open
 
 ## 🛠️ Development
 
-### 项目结构
+### Project Structure
 
 ```
 cuttle/
 ├── src/
-│   ├── lib.rs          # 库入口
-│   ├── main.rs         # 命令行工具
-│   ├── model.rs        # 模型定义
-│   ├── inference.rs    # 推理引擎
-│   ├── tensor.rs       # 张量运算
-│   ├── tokenizer.rs    # 分词器
-│   ├── downloader.rs   # 模型下载器
-│   ├── error.rs        # 错误处理
-│   └── utils.rs        # 工具函数
-├── assets/             # 模型文件存储目录
-│   └── qwen3-0.6b/    # Qwen3-0.6B模型文件
-├── examples/           # 示例代码
-├── benches/           # 性能测试
-├── tests/             # 集成测试
-├── Cargo.toml         # 项目配置
-└── README.md          # 项目文档
+│   ├── lib.rs          # Library entry point
+│   ├── main.rs         # Command line tool
+│   ├── model.rs        # Model definition
+│   ├── inference.rs    # Inference engine
+│   ├── tensor.rs       # Tensor operations
+│   ├── tokenizer.rs    # Tokenizer
+│   ├── downloader.rs   # Model downloader
+│   ├── error.rs        # Error handling
+│   └── utils.rs        # Utility functions
+├── assets/             # Model file storage directory
+│   └── qwen3-0.6b/    # Qwen3-0.6B model files
+├── examples/           # Example code
+├── benches/           # Performance tests
+├── tests/             # Integration tests
+├── Cargo.toml         # Project configuration
+└── README.md          # Project documentation
 ```
 
-## 🤖 Qwen3-0.6B模型配置
+## 🤖 Qwen3-0.6B Model Configuration
 
-- **参数量**: 0.6B
-- **词汇表大小**: 151,936
-- **隐藏层维度**: 1,024
-- **层数**: 28
-- **注意力头数**: 16
-- **键值头数**: 8 (GQA)
-- **支持语言**: 中文、英文等多语言
+- **Parameters**: 0.6B
+- **Vocabulary Size**: 151,936
+- **Hidden Dimension**: 1,024
+- **Layers**: 28
+- **Attention Heads**: 16
+- **Key-Value Heads**: 8 (GQA)
+- **Supported Languages**: Chinese, English, and other multilingual support
 
-## 📝 使用示例
+## 📝 Usage Examples
 
-### 中文文本生成
+### Chinese Text Generation
 
 ```bash
 cargo run -- generate --prompt "请写一首关于春天的诗。" --max-length 150
 ```
 
-### 英文文本生成
+### English Text Generation
 
 ```bash
 cargo run -- generate --prompt "Explain quantum computing in simple terms." --max-length 200
 ```
 
-### 交互式对话
+### Interactive Dialogue
 
 ```bash
 cargo run -- generate --interactive
